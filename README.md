@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Quorum
 
-## Getting Started
+A council of frontier models. Ask once, get a synthesized answer from Claude
+Opus 4.7, GPT-5.5, and Gemini 3.1 Pro Thinking — including where they agree,
+where they diverge, and what every one of them missed.
 
-First, run the development server:
+Personal-use web app. Vercel-hosted, mobile-accessible, always-on. Scheduled
+queries, daily briefings, and notifications come in later phases.
+
+---
+
+## Stack
+
+- **Next.js 16** (App Router, Turbopack) on **Vercel** (Fluid Compute)
+- **Supabase** (Postgres + Auth)
+- **Tailwind v4** + **shadcn/ui** for the design system
+- **Direct provider SDKs**: `@anthropic-ai/sdk`, `openai`, `@google/genai`
+- **Resend** for email digests (phase 4)
+- **Web Push** via service worker (phase 4)
+
+## Visual system
+
+**Council Chamber** — dark-first, editorial, authoritative. Single bronze
+accent on warm-tinted charcoal. Fraunces (display) + Inter (body) + Geist Mono
+(labels). Documented inline in `app/globals.css`.
+
+## Local development
 
 ```bash
+cp .env.local.example .env.local
+# fill in values
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The app expects API keys for Anthropic, OpenAI, and Google. See
+`.env.local.example` for where to get each.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Build phases
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Phase  | Scope                                                           | Status  |
+| ------ | --------------------------------------------------------------- | ------- |
+| **1a** | Repo + Next.js + Tailwind + shadcn + visual system              | ✅ Done |
+| **1b** | Supabase auth + middleware owner-email gate                     | Next    |
+| **1c** | Council orchestrator + 3 voice clients + anonymized synthesizer |         |
+| **1d** | Query API route + cost tracking                                 |         |
+| **1e** | Main UI: query form + synthesis card + raw-responses toggle     |         |
+| **1f** | Settings page + session history sidebar                         |         |
+| **2**  | PWA install + service worker                                    |         |
+| **3**  | Generic scheduled-task engine + Vercel Cron                     |         |
+| **4**  | Resend email + Web Push notifications                           |         |
+| **5**  | Briefings: topic tagging + searchable archive                   |         |
+| **6**  | Scraping (HTTP + Vercel Sandbox for bot-hardened sites)         |         |
 
-## Learn More
+## License
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+UNLICENSED — personal project.
