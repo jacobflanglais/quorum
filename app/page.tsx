@@ -1,12 +1,19 @@
-import { ArrowRight, Sparkles } from "lucide-react"
+import Link from "next/link"
+import { ArrowRight, LogOut, Sparkles } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { createClient } from "@/lib/supabase/server"
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
   return (
     <div className="flex flex-1 flex-col">
-      <Header />
+      <Header userEmail={user?.email ?? null} />
       <main className="flex flex-1 flex-col">
-        <Hero />
+        <Hero isSignedIn={Boolean(user)} />
         <CouncilPreview />
         <Footer />
       </main>
@@ -14,7 +21,7 @@ export default function Home() {
   )
 }
 
-function Header() {
+function Header({ userEmail }: { userEmail: string | null }) {
   return (
     <header className="border-b border-border">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-6">
@@ -27,11 +34,30 @@ function Header() {
             Phase 1 · Foundation
           </Badge>
         </div>
-        <nav className="hidden items-center gap-6 font-mono text-xs uppercase tracking-widest text-fg-muted sm:flex">
-          <span>About</span>
-          <span>Protocol</span>
-          <span>Settings</span>
-        </nav>
+
+        {userEmail ? (
+          <div className="flex items-center gap-4">
+            <span className="hidden font-mono text-[11px] uppercase tracking-widest text-fg-muted sm:inline">
+              {userEmail}
+            </span>
+            <form action="/auth/signout" method="post">
+              <button
+                type="submit"
+                className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-widest text-fg-muted transition-colors hover:text-foreground"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                Sign out
+              </button>
+            </form>
+          </div>
+        ) : (
+          <Link
+            href="/auth/login"
+            className="font-mono text-[11px] uppercase tracking-widest text-fg-muted transition-colors hover:text-foreground"
+          >
+            Sign in
+          </Link>
+        )}
       </div>
     </header>
   )
@@ -45,7 +71,7 @@ function Wordmark() {
   )
 }
 
-function Hero() {
+function Hero({ isSignedIn }: { isSignedIn: boolean }) {
   return (
     <section className="border-b border-border">
       <div className="mx-auto w-full max-w-6xl px-6 py-24 sm:py-32">
@@ -67,17 +93,28 @@ function Hero() {
         </p>
 
         <div className="mt-12 flex items-center gap-4">
-          <button
-            type="button"
-            disabled
-            className="group inline-flex h-11 items-center gap-2 rounded-md border border-accent-muted/50 bg-accent-subtle px-5 text-sm font-medium text-primary opacity-70"
-          >
-            <Sparkles className="h-4 w-4" />
-            Convene the council
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-          </button>
+          {isSignedIn ? (
+            <button
+              type="button"
+              disabled
+              className="group inline-flex h-11 items-center gap-2 rounded-md border border-accent-muted/50 bg-accent-subtle px-5 text-sm font-medium text-primary opacity-70"
+            >
+              <Sparkles className="h-4 w-4" />
+              Convene the council
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </button>
+          ) : (
+            <Link
+              href="/auth/login"
+              className="group inline-flex h-11 items-center gap-2 rounded-md border border-accent-muted/50 bg-accent-subtle px-5 text-sm font-medium text-primary transition-colors hover:bg-accent-muted/20"
+            >
+              <Sparkles className="h-4 w-4" />
+              Sign in to begin
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          )}
           <span className="font-mono text-[11px] uppercase tracking-widest text-fg-ghost">
-            Available in Phase 1c
+            {isSignedIn ? "Available in Phase 1c" : "Magic-link sign-in"}
           </span>
         </div>
       </div>
@@ -169,7 +206,7 @@ function Footer() {
     <footer className="mx-auto w-full max-w-6xl px-6 py-10 font-mono text-[11px] uppercase tracking-widest text-fg-ghost">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <span>Quorum · {new Date().getFullYear()}</span>
-        <span>v0.1.0 · phase 1a</span>
+        <span>v0.1.0 · phase 1b</span>
       </div>
     </footer>
   )
