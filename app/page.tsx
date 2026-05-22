@@ -2,6 +2,8 @@ import Link from "next/link"
 import { ArrowRight, LogOut, Sparkles } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/server"
+import { CouncilWorkspace } from "@/components/app/CouncilWorkspace"
+import type { HistoryItem } from "@/components/app/types"
 
 export default async function Home() {
   const supabase = await createClient()
@@ -9,11 +11,105 @@ export default async function Home() {
     data: { user },
   } = await supabase.auth.getUser()
 
+  if (!user) {
+    return <Landing />
+  }
+
+  // Load initial history server-side so the sidebar renders without a flash
+  const { data: rows } = await supabase
+    .from("council_queries")
+    .select(
+      `
+      id, question, status, total_cost_usd, created_at, completed_at,
+      syntheses ( recommendation, confidence )
+    `,
+    )
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(50)
+
+  const initialHistory: HistoryItem[] = (rows ?? []).map((row) => {
+    const synthesis = Array.isArray(row.syntheses)
+      ? row.syntheses[0]
+      : row.syntheses
+    return {
+      id: row.id as string,
+      question: row.question as string,
+      status: row.status as "pending" | "completed" | "failed",
+      total_cost_usd: row.total_cost_usd as number | null,
+      created_at: row.created_at as string,
+      completed_at: row.completed_at as string | null,
+      recommendation: (synthesis?.recommendation ?? null) as string | null,
+      confidence: (synthesis?.confidence ?? null) as
+        | "high"
+        | "medium"
+        | "low"
+        | null,
+    }
+  })
+
+  return (
+    <div className="flex h-screen flex-col">
+      <AppHeader userEmail={user.email ?? ""} />
+      <CouncilWorkspace initialHistory={initialHistory} />
+    </div>
+  )
+}
+
+// ── signed-in chrome ────────────────────────────────────────
+
+function AppHeader({ userEmail }: { userEmail: string }) {
+  return (
+    <header className="shrink-0 border-b border-border">
+      <div className="flex h-14 items-center justify-between px-4 md:px-6">
+        <div className="flex items-center gap-3">
+          <Wordmark />
+          <Badge
+            variant="outline"
+            className="hidden border-accent-muted/40 text-fg-muted font-mono text-[10px] uppercase tracking-widest sm:inline-flex"
+          >
+            Phase 1e · App
+          </Badge>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <span className="hidden font-mono text-[11px] uppercase tracking-widest text-fg-muted lg:inline">
+            {userEmail}
+          </span>
+          <form action="/auth/signout" method="post">
+            <button
+              type="submit"
+              className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-widest text-fg-muted transition-colors hover:text-foreground"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              Sign out
+            </button>
+          </form>
+        </div>
+      </div>
+    </header>
+  )
+}
+
+function Wordmark() {
+  return (
+    <Link
+      href="/"
+      className="font-display text-[22px] tracking-tight text-foreground"
+    >
+      Quorum
+    </Link>
+  )
+}
+
+// ── signed-out landing ──────────────────────────────────────
+
+function Landing() {
   return (
     <div className="flex flex-1 flex-col">
-      <Header userEmail={user?.email ?? null} />
+      <LandingHeader />
       <main className="flex flex-1 flex-col">
-        <Hero isSignedIn={Boolean(user)} />
+        <Hero />
         <CouncilPreview />
         <Footer />
       </main>
@@ -21,7 +117,7 @@ export default async function Home() {
   )
 }
 
-function Header({ userEmail }: { userEmail: string | null }) {
+function LandingHeader() {
   return (
     <header className="border-b border-border">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-6">
@@ -34,44 +130,18 @@ function Header({ userEmail }: { userEmail: string | null }) {
             Phase 1 · Foundation
           </Badge>
         </div>
-
-        {userEmail ? (
-          <div className="flex items-center gap-4">
-            <span className="hidden font-mono text-[11px] uppercase tracking-widest text-fg-muted sm:inline">
-              {userEmail}
-            </span>
-            <form action="/auth/signout" method="post">
-              <button
-                type="submit"
-                className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-widest text-fg-muted transition-colors hover:text-foreground"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-                Sign out
-              </button>
-            </form>
-          </div>
-        ) : (
-          <Link
-            href="/auth/login"
-            className="font-mono text-[11px] uppercase tracking-widest text-fg-muted transition-colors hover:text-foreground"
-          >
-            Sign in
-          </Link>
-        )}
+        <Link
+          href="/auth/login"
+          className="font-mono text-[11px] uppercase tracking-widest text-fg-muted transition-colors hover:text-foreground"
+        >
+          Sign in
+        </Link>
       </div>
     </header>
   )
 }
 
-function Wordmark() {
-  return (
-    <span className="font-display text-[22px] tracking-tight text-foreground">
-      Quorum
-    </span>
-  )
-}
-
-function Hero({ isSignedIn }: { isSignedIn: boolean }) {
+function Hero() {
   return (
     <section className="border-b border-border">
       <div className="mx-auto w-full max-w-6xl px-6 py-24 sm:py-32">
@@ -93,28 +163,16 @@ function Hero({ isSignedIn }: { isSignedIn: boolean }) {
         </p>
 
         <div className="mt-12 flex items-center gap-4">
-          {isSignedIn ? (
-            <button
-              type="button"
-              disabled
-              className="group inline-flex h-11 items-center gap-2 rounded-md border border-accent-muted/50 bg-accent-subtle px-5 text-sm font-medium text-primary opacity-70"
-            >
-              <Sparkles className="h-4 w-4" />
-              Convene the council
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </button>
-          ) : (
-            <Link
-              href="/auth/login"
-              className="group inline-flex h-11 items-center gap-2 rounded-md border border-accent-muted/50 bg-accent-subtle px-5 text-sm font-medium text-primary transition-colors hover:bg-accent-muted/20"
-            >
-              <Sparkles className="h-4 w-4" />
-              Sign in to begin
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </Link>
-          )}
+          <Link
+            href="/auth/login"
+            className="group inline-flex h-11 items-center gap-2 rounded-md border border-accent-muted/50 bg-accent-subtle px-5 text-sm font-medium text-primary transition-colors hover:bg-accent-muted/20"
+          >
+            <Sparkles className="h-4 w-4" />
+            Sign in to begin
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </Link>
           <span className="font-mono text-[11px] uppercase tracking-widest text-fg-ghost">
-            {isSignedIn ? "Available in Phase 1c" : "Magic-link sign-in"}
+            Magic-link sign-in
           </span>
         </div>
       </div>
@@ -206,7 +264,7 @@ function Footer() {
     <footer className="mx-auto w-full max-w-6xl px-6 py-10 font-mono text-[11px] uppercase tracking-widest text-fg-ghost">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <span>Quorum · {new Date().getFullYear()}</span>
-        <span>v0.1.0 · phase 1b</span>
+        <span>v0.1.0 · phase 1e</span>
       </div>
     </footer>
   )
