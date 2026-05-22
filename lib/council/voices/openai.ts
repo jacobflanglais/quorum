@@ -19,9 +19,11 @@ export async function callOpenAI(args: CallArgs): Promise<VoiceResult> {
   })
 
   try {
+    // GPT-5+ and o-series models require `max_completion_tokens`.
+    // Older models accept both; new param is forward-compatible.
     const response = await client.chat.completions.create({
       model: args.model,
-      max_tokens: 1500,
+      max_completion_tokens: 1500,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: args.system },
