@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { buildVoiceMessages } from "./prompts"
+import { readAppConfig } from "./config"
 import { findProviderModel, readRegistry } from "./registry"
 import { VOICE_CALLERS } from "./voices"
 import { anonymize } from "./anonymizer"
@@ -169,16 +170,14 @@ export async function runCouncil({
     //
     // Synthesizer is intentionally a DIFFERENT model than any voice —
     // putting the judge outside the voice pool structurally eliminates
-    // self-bias (anonymization remains as defense in depth). Sonnet 4.6
-    // handles structured synthesis well; voices keep Opus 4.7 to
-    // preserve the "frontier council" property.
-    //
-    // TODO(phase-1f): expose this via the settings page (app_config table)
-    // instead of hard-coding.
+    // self-bias (anonymization remains as defense in depth). Default:
+    // Sonnet 4.6 for synthesis, Opus 4.7 for the Anthropic voice. The
+    // user can change this on the /settings page (app_config table).
     let synthesis: SynthesisResult | null = null
     if (successful.length >= 2) {
+      const appConfig = await readAppConfig()
       const synthesizerModel =
-        process.env.QUORUM_SYNTHESIZER_MODEL ?? "claude-sonnet-4-6"
+        process.env.QUORUM_SYNTHESIZER_MODEL ?? appConfig.synthesizer_model
       synthesis = await synthesize({
         model: synthesizerModel,
         question,

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowRight, LogOut, Sparkles } from "lucide-react"
+import { ArrowRight, LogOut, Settings, Sparkles } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/server"
 import { CouncilWorkspace } from "@/components/app/CouncilWorkspace"
@@ -68,11 +68,18 @@ function AppHeader({ userEmail }: { userEmail: string }) {
             variant="outline"
             className="hidden border-accent-muted/40 text-fg-muted font-mono text-[10px] uppercase tracking-widest sm:inline-flex"
           >
-            Phase 1e · App
+            Phase 1f · App
           </Badge>
         </div>
 
         <div className="flex items-center gap-4">
+          <Link
+            href="/settings"
+            className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-widest text-fg-muted transition-colors hover:text-foreground"
+          >
+            <Settings className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Settings</span>
+          </Link>
           <span className="hidden font-mono text-[11px] uppercase tracking-widest text-fg-muted lg:inline">
             {userEmail}
           </span>
@@ -82,7 +89,7 @@ function AppHeader({ userEmail }: { userEmail: string }) {
               className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-widest text-fg-muted transition-colors hover:text-foreground"
             >
               <LogOut className="h-3.5 w-3.5" />
-              Sign out
+              <span className="hidden sm:inline">Sign out</span>
             </button>
           </form>
         </div>
