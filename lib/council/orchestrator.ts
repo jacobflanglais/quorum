@@ -166,9 +166,19 @@ export async function runCouncil({
     }
 
     // 5–6. synthesize if we have ≥ 2 successful voices
+    //
+    // Synthesizer is intentionally a DIFFERENT model than any voice —
+    // putting the judge outside the voice pool structurally eliminates
+    // self-bias (anonymization remains as defense in depth). Sonnet 4.6
+    // handles structured synthesis well; voices keep Opus 4.7 to
+    // preserve the "frontier council" property.
+    //
+    // TODO(phase-1f): expose this via the settings page (app_config table)
+    // instead of hard-coding.
     let synthesis: SynthesisResult | null = null
     if (successful.length >= 2) {
-      const synthesizerModel = providerModels.anthropic
+      const synthesizerModel =
+        process.env.QUORUM_SYNTHESIZER_MODEL ?? "claude-sonnet-4-6"
       synthesis = await synthesize({
         model: synthesizerModel,
         question,

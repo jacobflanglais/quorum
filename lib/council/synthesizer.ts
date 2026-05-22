@@ -40,7 +40,7 @@ export async function synthesize(args: SynthesizeArgs): Promise<SynthesisResult>
 
   const response = await client.messages.create({
     model: args.model,
-    max_tokens: 4000,
+    max_tokens: 2500,
     system,
     messages: [{ role: "user", content: user }],
   })
