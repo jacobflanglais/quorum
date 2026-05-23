@@ -5,6 +5,7 @@ import { Check, Edit3, Loader2, X } from "lucide-react"
 import type { RegistryEntry } from "@/lib/council/registry"
 import type { AppConfig } from "@/lib/council/config"
 import type { Provider } from "@/lib/council/types"
+import { PushSubscription } from "@/components/app/PushSubscription"
 
 interface CostStats {
   today_usd: number
@@ -44,6 +45,7 @@ export function SettingsClient({
   return (
     <div className="flex flex-col gap-16">
       <CostSection stats={costStats} />
+      <NotificationsSection />
       <VoicesSection
         registry={registry}
         onUpdate={(provider, updates) =>
@@ -59,6 +61,25 @@ export function SettingsClient({
         onUpdate={(next) => setAppConfig(next)}
       />
     </div>
+  )
+}
+
+// ── Notifications ───────────────────────────────────────────
+
+function NotificationsSection() {
+  return (
+    <section>
+      <SectionHeader label="Notifications" title="How Quorum reaches you" />
+      <p className="mb-6 max-w-2xl text-sm leading-relaxed text-fg-muted">
+        Scheduled tasks email you on completion by default (per-task toggle).
+        For real-time delivery on your phone&rsquo;s lock screen, enable push
+        notifications here.{" "}
+        <span className="text-fg-ghost">
+          On iOS this requires installing Quorum to the home screen first.
+        </span>
+      </p>
+      <PushSubscription />
+    </section>
   )
 }
 

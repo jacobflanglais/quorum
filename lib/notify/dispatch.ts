@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { sendEmail } from "./email"
+import { sendPushToUser } from "./push"
 import { renderScheduledTaskEmail } from "./templates/scheduledTaskResult"
 import type {
   ScheduledTask,
@@ -95,7 +96,31 @@ export async function dispatchTaskNotifications(
     }
   }
 
-  // Phase 4b will fan out to push subscriptions here.
+  if (args.task.notify_push) {
+    try {
+      const recommendationText =
+        synthesis?.recommendation.text ??
+        (args.failed
+          ? `Run failed: ${args.failureMessage ?? "Unknown error"}`
+          : "Council answered — open Quorum for the synthesis.")
+      await sendPushToUser(args.admin, args.task.user_id, {
+        title: `Quorum · ${args.task.name}`,
+        body: truncate(recommendationText, 180),
+        url: appUrl,
+        tag: `task-${args.task.id}`,
+      })
+    } catch (err) {
+      console.error(
+        `[notify] push send failed for task ${args.task.id}:`,
+        err instanceof Error ? err.message : err,
+      )
+    }
+  }
+}
+
+function truncate(s: string, max: number): string {
+  if (s.length <= max) return s
+  return s.slice(0, max - 1).trimEnd() + "…"
 }
 
 function buildAppUrl(queryId: string | null): string {
