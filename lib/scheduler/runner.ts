@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { runCouncil } from "@/lib/council/orchestrator"
+import { dispatchTaskNotifications } from "@/lib/notify/dispatch"
 import { interpret } from "./cron"
 import type { ScheduledTask } from "./types"
 
@@ -56,6 +57,15 @@ export async function runScheduledTask(
     // 4. compute next run time
     await advanceTaskSchedule(admin, task)
 
+    // 5. notify (email now; push lands in 4b). Wrapped — notify
+    //    failures never bubble up to fail the run.
+    await dispatchTaskNotifications({
+      admin,
+      task,
+      councilQueryId: result.query_id,
+      failed: false,
+    })
+
     return { ok: true, council_query_id: result.query_id }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
@@ -71,6 +81,15 @@ export async function runScheduledTask(
 
     // Still advance the schedule so we don't get stuck in a tight retry loop
     await advanceTaskSchedule(admin, task)
+
+    // Notify on failure too — better the user knows than silently dropped
+    await dispatchTaskNotifications({
+      admin,
+      task,
+      councilQueryId: null,
+      failed: true,
+      failureMessage: message,
+    })
 
     return { ok: false, error: message }
   }

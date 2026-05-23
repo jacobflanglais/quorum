@@ -53,6 +53,8 @@ export async function POST(request: NextRequest) {
     ? body.tags.filter((t): t is string => typeof t === "string").slice(0, 16)
     : []
   const enabled = body.enabled !== false
+  const notify_email = body.notify_email !== false
+  const notify_push = body.notify_push !== false
 
   if (!name) {
     return NextResponse.json({ error: "name is required" }, { status: 400 })
@@ -88,6 +90,8 @@ export async function POST(request: NextRequest) {
       timezone,
       tags,
       enabled,
+      notify_email,
+      notify_push,
       next_run_at,
     })
     .select("*")

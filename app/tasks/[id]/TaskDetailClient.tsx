@@ -10,6 +10,7 @@ import {
   Edit3,
   ExternalLink,
   Loader2,
+  Mail,
   Pause,
   Play,
   Play as PlayIcon,
@@ -128,6 +129,12 @@ export function TaskDetailClient({ initialTask, initialRuns }: Props) {
           <Clock className="h-3 w-3" />
           {humanize(task.schedule_cron)} · {task.timezone}
         </span>
+        {task.notify_email && (
+          <span className="inline-flex items-center gap-1.5">
+            <Mail className="h-3 w-3" />
+            Email on completion
+          </span>
+        )}
         {task.next_run_at && task.enabled && (
           <span>
             Next ·{" "}
@@ -317,6 +324,7 @@ function EditForm({
   const [prompt, setPrompt] = useState(task.prompt)
   const [cron, setCron] = useState(task.schedule_cron)
   const [timezone, setTimezone] = useState(task.timezone)
+  const [notifyEmail, setNotifyEmail] = useState(task.notify_email)
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -326,6 +334,7 @@ function EditForm({
       prompt: prompt.trim(),
       schedule_cron: cron.trim(),
       timezone: timezone.trim(),
+      notify_email: notifyEmail,
     })
   }
 
@@ -386,6 +395,25 @@ function EditForm({
             />
           </FormField>
         </div>
+
+        <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-3">
+          <input
+            type="checkbox"
+            checked={notifyEmail}
+            onChange={(e) => setNotifyEmail(e.target.checked)}
+            disabled={pending}
+            className="mt-0.5 h-4 w-4 cursor-pointer accent-primary"
+          />
+          <span className="flex-1">
+            <span className="block text-sm text-foreground">
+              Email me when this task runs
+            </span>
+            <span className="mt-0.5 block text-xs leading-relaxed text-fg-muted">
+              Synthesis digest with the recommendation, main caveat, and blind
+              spots.
+            </span>
+          </span>
+        </label>
 
         <details className="rounded border border-border bg-background p-3 text-xs text-fg-muted">
           <summary className="cursor-pointer font-mono text-[10px] uppercase tracking-widest">

@@ -113,6 +113,8 @@ export async function PATCH(request: NextRequest, ctx: RouteContext) {
     updates.tags = body.tags.filter((t): t is string => typeof t === "string").slice(0, 16)
   }
   if (typeof body.enabled === "boolean") updates.enabled = body.enabled
+  if (typeof body.notify_email === "boolean") updates.notify_email = body.notify_email
+  if (typeof body.notify_push === "boolean") updates.notify_push = body.notify_push
 
   let scheduleChanged = false
   if (typeof body.schedule_cron === "string" && body.schedule_cron.trim()) {

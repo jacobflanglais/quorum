@@ -8,6 +8,8 @@ export interface ScheduledTask {
   timezone: string
   tags: string[]
   enabled: boolean
+  notify_email: boolean
+  notify_push: boolean
   next_run_at: string | null
   last_run_at: string | null
   created_at: string

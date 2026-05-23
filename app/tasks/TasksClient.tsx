@@ -248,6 +248,7 @@ interface NewTaskInput {
   prompt: string
   schedule_cron: string
   timezone: string
+  notify_email: boolean
 }
 
 function NewTaskForm({
@@ -270,6 +271,7 @@ function NewTaskForm({
       ? Intl.DateTimeFormat().resolvedOptions().timeZone
       : "UTC",
   )
+  const [notifyEmail, setNotifyEmail] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -289,6 +291,7 @@ function NewTaskForm({
         prompt: prompt.trim(),
         schedule_cron,
         timezone,
+        notify_email: notifyEmail,
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create task")
@@ -437,6 +440,25 @@ function NewTaskForm({
             <span className="text-fg-ghost">({schedule_cron})</span>
           </p>
         )}
+
+        <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-3">
+          <input
+            type="checkbox"
+            checked={notifyEmail}
+            onChange={(e) => setNotifyEmail(e.target.checked)}
+            disabled={saving}
+            className="mt-0.5 h-4 w-4 cursor-pointer accent-primary"
+          />
+          <span className="flex-1">
+            <span className="block text-sm text-foreground">
+              Email me when this task runs
+            </span>
+            <span className="mt-0.5 block text-xs leading-relaxed text-fg-muted">
+              You&rsquo;ll receive the synthesis as a Quorum-branded digest with
+              the recommendation, main caveat, and blind spots.
+            </span>
+          </span>
+        </label>
 
         {error && (
           <p role="alert" className="text-sm text-critical">
