@@ -31,6 +31,10 @@ export async function POST(request: NextRequest) {
   const question = isObject(body) && typeof body.question === "string"
     ? body.question.trim()
     : ""
+  const searchEnabled =
+    isObject(body) && typeof body.searchEnabled === "boolean"
+      ? body.searchEnabled
+      : false
 
   if (question.length === 0) {
     return NextResponse.json({ error: "Question is required" }, { status: 400 })
@@ -54,6 +58,7 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       question,
       context,
+      searchEnabled,
     })
     return NextResponse.json(result)
   } catch (err) {

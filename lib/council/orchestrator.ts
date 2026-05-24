@@ -6,6 +6,7 @@ import { VOICE_CALLERS } from "./voices"
 import { anonymize } from "./anonymizer"
 import { synthesize } from "./synthesizer"
 import { PROVIDERS } from "./types"
+import { tavilySearch, type SearchResult } from "@/lib/search/tavily"
 import type {
   AnonymizedVoice,
   CouncilResult,
@@ -21,6 +22,8 @@ export interface RunCouncilArgs {
   userId: string
   question: string
   context?: SessionContextEntry[]
+  /** If true, run a Tavily search and pass results to voices + synthesizer. */
+  searchEnabled?: boolean
 }
 
 /**
@@ -43,6 +46,7 @@ export async function runCouncil({
   userId,
   question,
   context = [],
+  searchEnabled = false,
 }: RunCouncilArgs): Promise<CouncilResult> {
   const start = Date.now()
 
@@ -77,8 +81,34 @@ export async function runCouncil({
       PROVIDERS.map((p) => [p, findProviderModel(registry, p).model]),
     ) as Record<Provider, string>
 
+    // 2b. (Phase 6) if search enabled, fetch web sources before fan-out.
+    //     Failures are non-fatal — we proceed without grounding rather
+    //     than failing the whole query.
+    let searchResults: SearchResult[] = []
+    let searchCost = 0
+    if (searchEnabled) {
+      try {
+        const tavily = await tavilySearch({ query: question })
+        searchResults = tavily.results
+        searchCost = tavily.cost_usd
+        await supabase
+          .from("council_queries")
+          .update({ search_results: tavily.results as unknown })
+          .eq("id", query_id)
+      } catch (err) {
+        console.error(
+          "[council] tavily search failed (continuing without grounding):",
+          err instanceof Error ? err.message : err,
+        )
+      }
+    }
+
     // 3. fan out
-    const { system, user } = buildVoiceMessages({ question, context })
+    const { system, user } = buildVoiceMessages({
+      question,
+      context,
+      sources: searchResults.length > 0 ? searchResults : undefined,
+    })
 
     const voicePromises = PROVIDERS.map(async (provider) =>
       VOICE_CALLERS[provider]({
@@ -183,6 +213,7 @@ export async function runCouncil({
         question,
         context,
         anonymizedVoices,
+        sources: searchResults.length > 0 ? searchResults : undefined,
       })
 
       const { error: synthErr } = await supabase.from("syntheses").insert({
@@ -206,7 +237,8 @@ export async function runCouncil({
     // 7. mark complete
     const total_cost_usd =
       voices.reduce((sum, v) => sum + (v.ok ? v.cost_usd : 0), 0) +
-      (synthesis?.cost_usd ?? 0)
+      (synthesis?.cost_usd ?? 0) +
+      searchCost
 
     const total_latency_ms = Date.now() - start
 
@@ -226,6 +258,7 @@ export async function runCouncil({
       voices,
       label_mapping: labelMapping,
       synthesis,
+      search_results: searchResults.length > 0 ? searchResults : null,
       total_cost_usd,
       total_latency_ms,
     }

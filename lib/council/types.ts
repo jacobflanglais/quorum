@@ -114,6 +114,7 @@ export interface CouncilResult {
   voices: VoiceResult[]
   label_mapping: LabelMapping
   synthesis: SynthesisResult | null // null if too few voices succeeded
+  search_results: import("@/lib/search/tavily").SearchResult[] | null
   total_cost_usd: number
   total_latency_ms: number
 }

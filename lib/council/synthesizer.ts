@@ -8,6 +8,7 @@ import type {
   SessionContextEntry,
   SynthesisResult,
 } from "./types"
+import type { SearchResult } from "@/lib/search/tavily"
 
 const TIMEOUT_MS = 90_000
 
@@ -16,6 +17,7 @@ export interface SynthesizeArgs {
   question: string
   context: SessionContextEntry[]
   anonymizedVoices: AnonymizedVoice[]
+  sources?: SearchResult[]
 }
 
 /**
@@ -36,6 +38,7 @@ export async function synthesize(args: SynthesizeArgs): Promise<SynthesisResult>
     question: args.question,
     context: args.context,
     anonymizedVoices: args.anonymizedVoices,
+    sources: args.sources,
   })
 
   const response = await client.messages.create({

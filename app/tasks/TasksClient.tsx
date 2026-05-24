@@ -250,6 +250,7 @@ interface NewTaskInput {
   schedule_cron: string
   timezone: string
   tags: string[]
+  search_enabled: boolean
   notify_email: boolean
 }
 
@@ -274,6 +275,7 @@ function NewTaskForm({
       : "UTC",
   )
   const [tags, setTags] = useState<string[]>([])
+  const [searchEnabled, setSearchEnabled] = useState(false)
   const [notifyEmail, setNotifyEmail] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -295,6 +297,7 @@ function NewTaskForm({
         schedule_cron,
         timezone,
         tags,
+        search_enabled: searchEnabled,
         notify_email: notifyEmail,
       })
     } catch (err) {
@@ -456,6 +459,26 @@ function NewTaskForm({
             Used on /briefings to filter the archive
           </p>
         </Field>
+
+        <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-3">
+          <input
+            type="checkbox"
+            checked={searchEnabled}
+            onChange={(e) => setSearchEnabled(e.target.checked)}
+            disabled={saving}
+            className="mt-0.5 h-4 w-4 cursor-pointer accent-primary"
+          />
+          <span className="flex-1">
+            <span className="block text-sm text-foreground">
+              Search the web before this task runs
+            </span>
+            <span className="mt-0.5 block text-xs leading-relaxed text-fg-muted">
+              Tavily fetches top sources for your prompt before the council
+              answers — useful for current-events questions. Adds ~$0.005 + a
+              few cents in extra tokens per run.
+            </span>
+          </span>
+        </label>
 
         <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-3">
           <input

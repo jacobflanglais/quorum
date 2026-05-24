@@ -27,7 +27,7 @@ export async function GET(_request: NextRequest, ctx: RouteContext) {
   const { data: queryRow, error: queryErr } = await supabase
     .from("council_queries")
     .select(
-      "id, question, status, total_cost_usd, created_at, completed_at",
+      "id, question, status, total_cost_usd, search_results, created_at, completed_at",
     )
     .eq("id", id)
     .eq("user_id", user.id)

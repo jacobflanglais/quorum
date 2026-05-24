@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
     ? body.tags.filter((t): t is string => typeof t === "string").slice(0, 16)
     : []
   const enabled = body.enabled !== false
+  const search_enabled = body.search_enabled === true
   const notify_email = body.notify_email !== false
   const notify_push = body.notify_push !== false
 
@@ -90,6 +91,7 @@ export async function POST(request: NextRequest) {
       timezone,
       tags,
       enabled,
+      search_enabled,
       notify_email,
       notify_push,
       next_run_at,

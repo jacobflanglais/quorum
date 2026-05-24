@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react"
 import { QueryForm } from "./QueryForm"
 import { SynthesisDisplay } from "./SynthesisDisplay"
 import { RawResponsesPanel } from "./RawResponsesPanel"
+import { SourcesPanel } from "./SourcesPanel"
 import { HistorySidebar } from "./HistorySidebar"
 import type { CurrentResult, HistoryItem } from "./types"
 import type { CouncilResult } from "@/lib/council/types"
@@ -36,13 +37,14 @@ export function CouncilWorkspace({ initialHistory }: CouncilWorkspaceProps) {
   }, [])
 
   const submitQuestion = useCallback(
-    async (question: string) => {
+    async (input: { question: string; searchEnabled: boolean }) => {
+      const { question, searchEnabled } = input
       setPhase({ kind: "submitting", question })
       try {
         const res = await fetch("/api/council", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ question }),
+          body: JSON.stringify({ question, searchEnabled }),
         })
         if (!res.ok) {
           const errBody = (await res.json().catch(() => ({}))) as {
@@ -173,6 +175,10 @@ function WorkspaceBody({ phase }: { phase: Phase }) {
         </div>
       )}
 
+      {result.search_results && result.search_results.length > 0 && (
+        <SourcesPanel sources={result.search_results} />
+      )}
+
       <RawResponsesPanel voices={result.voices} />
 
       <div className="mt-10 flex items-center justify-between border-t border-border pt-4 font-mono text-[10px] uppercase tracking-widest text-fg-ghost">
@@ -277,6 +283,7 @@ function toCurrentResult(json: CouncilResult): CurrentResult {
           latency_ms: json.synthesis.latency_ms,
         }
       : null,
+    search_results: json.search_results ?? null,
     total_cost_usd: json.total_cost_usd,
     total_latency_ms: json.total_latency_ms,
   }
@@ -286,6 +293,7 @@ interface HistoryDetailResponse {
   query: {
     id: string
     question: string
+    search_results?: import("@/lib/search/tavily").SearchResult[] | null
   }
   voices: CurrentResult["voices"]
   synthesis: {
@@ -307,6 +315,7 @@ function historyToCurrentResult(json: HistoryDetailResponse): CurrentResult {
     question: json.query.question,
     voices: json.voices,
     synthesis: json.synthesis,
+    search_results: json.query.search_results ?? null,
     total_cost_usd,
     total_latency_ms: json.synthesis?.latency_ms ?? 0,
   }

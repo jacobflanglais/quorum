@@ -339,6 +339,7 @@ function EditForm({
   const [cron, setCron] = useState(task.schedule_cron)
   const [timezone, setTimezone] = useState(task.timezone)
   const [tags, setTags] = useState<string[]>(task.tags ?? [])
+  const [searchEnabled, setSearchEnabled] = useState(task.search_enabled ?? false)
   const [notifyEmail, setNotifyEmail] = useState(task.notify_email)
 
   async function submit(e: React.FormEvent) {
@@ -350,6 +351,7 @@ function EditForm({
       schedule_cron: cron.trim(),
       timezone: timezone.trim(),
       tags,
+      search_enabled: searchEnabled,
       notify_email: notifyEmail,
     })
   }
@@ -423,6 +425,25 @@ function EditForm({
             Used on /briefings to filter the archive
           </p>
         </FormField>
+
+        <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-3">
+          <input
+            type="checkbox"
+            checked={searchEnabled}
+            onChange={(e) => setSearchEnabled(e.target.checked)}
+            disabled={pending}
+            className="mt-0.5 h-4 w-4 cursor-pointer accent-primary"
+          />
+          <span className="flex-1">
+            <span className="block text-sm text-foreground">
+              Search the web before each run
+            </span>
+            <span className="mt-0.5 block text-xs leading-relaxed text-fg-muted">
+              Fetches current sources via Tavily and grounds the council on
+              them — best for current-events prompts.
+            </span>
+          </span>
+        </label>
 
         <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-3">
           <input

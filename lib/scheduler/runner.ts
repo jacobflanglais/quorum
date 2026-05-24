@@ -43,6 +43,7 @@ export async function runScheduledTask(
       userId: task.user_id,
       question: task.prompt,
       context: [], // scheduled tasks intentionally have no session context
+      searchEnabled: task.search_enabled ?? false,
     })
 
     // 3a. mark the run row completed
