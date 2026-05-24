@@ -19,6 +19,7 @@ import {
 } from "lucide-react"
 import { formatDistanceToNowStrict } from "date-fns"
 import { humanize, SCHEDULE_PRESETS } from "@/lib/scheduler/cron"
+import { TagInput } from "@/components/app/TagInput"
 import type {
   ScheduledTask,
   ScheduledTaskRunDetail,
@@ -133,6 +134,19 @@ export function TaskDetailClient({ initialTask, initialRuns }: Props) {
           <span className="inline-flex items-center gap-1.5">
             <Mail className="h-3 w-3" />
             Email on completion
+          </span>
+        )}
+        {task.tags.length > 0 && (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="text-fg-ghost">·</span>
+            {task.tags.map((tag) => (
+              <span
+                key={tag}
+                className="inline-flex rounded-md border border-border bg-surface px-2 py-0.5 text-fg-muted"
+              >
+                {tag}
+              </span>
+            ))}
           </span>
         )}
         {task.next_run_at && task.enabled && (
@@ -324,6 +338,7 @@ function EditForm({
   const [prompt, setPrompt] = useState(task.prompt)
   const [cron, setCron] = useState(task.schedule_cron)
   const [timezone, setTimezone] = useState(task.timezone)
+  const [tags, setTags] = useState<string[]>(task.tags ?? [])
   const [notifyEmail, setNotifyEmail] = useState(task.notify_email)
 
   async function submit(e: React.FormEvent) {
@@ -334,6 +349,7 @@ function EditForm({
       prompt: prompt.trim(),
       schedule_cron: cron.trim(),
       timezone: timezone.trim(),
+      tags,
       notify_email: notifyEmail,
     })
   }
@@ -395,6 +411,18 @@ function EditForm({
             />
           </FormField>
         </div>
+
+        <FormField label="Tags">
+          <TagInput
+            value={tags}
+            onChange={setTags}
+            disabled={pending}
+            placeholder="Add topics…"
+          />
+          <p className="mt-2 font-mono text-[10px] uppercase tracking-widest text-fg-ghost">
+            Used on /briefings to filter the archive
+          </p>
+        </FormField>
 
         <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-3">
           <input

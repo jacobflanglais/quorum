@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowRight, CalendarClock, LogOut, Settings, Sparkles } from "lucide-react"
+import { ArrowRight, BookOpen, CalendarClock, LogOut, Settings, Sparkles } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/server"
 import { CouncilWorkspace } from "@/components/app/CouncilWorkspace"
@@ -79,6 +79,13 @@ function AppHeader({ userEmail }: { userEmail: string }) {
           >
             <CalendarClock className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Tasks</span>
+          </Link>
+          <Link
+            href="/briefings"
+            className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-widest text-fg-muted transition-colors hover:text-foreground"
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Briefings</span>
           </Link>
           <Link
             href="/settings"

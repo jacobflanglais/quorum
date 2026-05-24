@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowLeft, LogOut, Settings } from "lucide-react"
+import { ArrowLeft, BookOpen, LogOut, Settings } from "lucide-react"
 import { notFound, redirect } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/server"
@@ -102,6 +102,13 @@ function DetailHeader({ userEmail }: { userEmail: string }) {
           </Badge>
         </div>
         <div className="flex items-center gap-4">
+          <Link
+            href="/briefings"
+            className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-widest text-fg-muted transition-colors hover:text-foreground"
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Briefings</span>
+          </Link>
           <Link
             href="/settings"
             className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-widest text-fg-muted transition-colors hover:text-foreground"

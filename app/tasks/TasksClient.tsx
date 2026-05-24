@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 import { formatDistanceToNowStrict } from "date-fns"
 import { humanize, SCHEDULE_PRESETS } from "@/lib/scheduler/cron"
+import { TagInput } from "@/components/app/TagInput"
 import type { ScheduledTask } from "@/lib/scheduler/types"
 
 interface TasksClientProps {
@@ -248,6 +249,7 @@ interface NewTaskInput {
   prompt: string
   schedule_cron: string
   timezone: string
+  tags: string[]
   notify_email: boolean
 }
 
@@ -271,6 +273,7 @@ function NewTaskForm({
       ? Intl.DateTimeFormat().resolvedOptions().timeZone
       : "UTC",
   )
+  const [tags, setTags] = useState<string[]>([])
   const [notifyEmail, setNotifyEmail] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -291,6 +294,7 @@ function NewTaskForm({
         prompt: prompt.trim(),
         schedule_cron,
         timezone,
+        tags,
         notify_email: notifyEmail,
       })
     } catch (err) {
@@ -440,6 +444,18 @@ function NewTaskForm({
             <span className="text-fg-ghost">({schedule_cron})</span>
           </p>
         )}
+
+        <Field label="Tags (optional)">
+          <TagInput
+            value={tags}
+            onChange={setTags}
+            disabled={saving}
+            placeholder="Add topics — e.g. AI industry, markets…"
+          />
+          <p className="mt-2 font-mono text-[10px] uppercase tracking-widest text-fg-ghost">
+            Used on /briefings to filter the archive
+          </p>
+        </Field>
 
         <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-3">
           <input
