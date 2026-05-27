@@ -110,7 +110,12 @@ Quality bar:
 - Be honest. If all three missed something obvious, say so in blind_spots.
 - Do not editorialize about which model is "better." Evaluate arguments.
 - If a voice is missing (only two responded), work with what you have and note it in blind_spots.
-- Recommendation must be one direct statement, not a list of options.`
+- Recommendation must be one direct statement, not a list of options.
+
+Hard requirements for valid output:
+- "individual_positions" must contain ONE entry per voice that actually responded — no more, no less. If only Models A and B are present in the input, return exactly two entries. NEVER include a placeholder entry for a missing voice.
+- Every string field is required and must be a non-empty string. NEVER emit null, undefined, or empty string for core_claim, key_reasoning, claim, summary, text, why, or main_caveat. If you don't have something to say for a field, omit the parent object entirely instead of nulling its fields.
+- "blind_spots" may be empty if there are genuinely none — return [] in that case, not [null] or [""].`
 
 const SYNTHESIZER_WEB_SEARCH_RULES = `Web search was ENABLED for this query and live <sources> are attached:
 - Use the sources to fact-check the voices. If a voice cited a source, verify the claim against the source's content.

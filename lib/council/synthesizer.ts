@@ -61,7 +61,7 @@ export async function synthesize(args: SynthesizeArgs): Promise<SynthesisResult>
     .join("")
     .trim()
 
-  const parsed = parseJson(raw)
+  const parsed = repairSynthesisJson(parseJson(raw))
   const validation = synthesisSchema.safeParse(parsed)
   if (!validation.success) {
     throw new Error(
@@ -85,6 +85,56 @@ export async function synthesize(args: SynthesizeArgs): Promise<SynthesisResult>
     ),
     latency_ms,
   }
+}
+
+/**
+ * Best-effort cleanup of the synthesizer's JSON before strict validation.
+ *
+ * Strips entries inside array-of-objects fields whose required string
+ * keys are null/undefined/empty. This catches the failure mode where
+ * the model emits a placeholder object for a missing voice (e.g.
+ * `individual_positions[2] = { label: "C", core_claim: null, ... }`)
+ * which would otherwise fail validation and 500 the whole request.
+ *
+ * If the cleanup leaves nothing salvageable, the original input is
+ * returned unchanged so validation surfaces the real error.
+ */
+function repairSynthesisJson(input: unknown): unknown {
+  if (!isObject(input)) return input
+
+  const cleaned = { ...input }
+
+  cleaned.individual_positions = filterValidObjects(
+    input.individual_positions,
+    ["core_claim", "key_reasoning"],
+  )
+  cleaned.agreement_map = filterValidObjects(input.agreement_map, ["claim"])
+  cleaned.divergence_analysis = filterValidObjects(input.divergence_analysis, [
+    "topic",
+    "summary",
+  ])
+  if (Array.isArray(input.blind_spots)) {
+    cleaned.blind_spots = input.blind_spots.filter(
+      (s): s is string => typeof s === "string" && s.trim().length > 0,
+    )
+  }
+
+  return cleaned
+}
+
+function filterValidObjects(value: unknown, requiredStringKeys: string[]): unknown {
+  if (!Array.isArray(value)) return value
+  return value.filter((item) => {
+    if (!isObject(item)) return false
+    return requiredStringKeys.every((k) => {
+      const v = item[k]
+      return typeof v === "string" && v.trim().length > 0
+    })
+  })
+}
+
+function isObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v)
 }
 
 function parseJson(raw: string): unknown {
