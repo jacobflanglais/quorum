@@ -12,6 +12,12 @@ export function renderSynthesisMarkdown(s: SynthesisJson): string {
 
   lines.push("## E. Recommendation", "")
   lines.push(`**${s.recommendation.text}**`, "")
+  if (s.recommendation.list_items && s.recommendation.list_items.length > 0) {
+    for (const item of s.recommendation.list_items) {
+      lines.push(`- ${item}`)
+    }
+    lines.push("")
+  }
   lines.push(s.recommendation.why, "")
   lines.push(`_Main caveat:_ ${s.recommendation.main_caveat}`, "")
   lines.push(`_Confidence:_ ${s.recommendation.confidence}`, "")

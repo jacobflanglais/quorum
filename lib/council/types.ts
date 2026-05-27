@@ -92,6 +92,8 @@ export interface SynthesisJson {
   blind_spots: string[]
   recommendation: {
     text: string
+    /** Optional structured list for list-shaped answers (slate of games, steps, items). */
+    list_items?: string[]
     why: string
     main_caveat: string
     confidence: SynthesisConfidence

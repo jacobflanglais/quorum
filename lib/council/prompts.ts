@@ -87,8 +87,9 @@ Return a single JSON object (no markdown fences, no extra commentary) matching t
     "What assumption did all models share that might be wrong?"
   ],
   "recommendation": {
-    "text": "Single direct statement of what to do or believe.",
-    "why": "2–3 sentences grounded in the convergence and divergence analysis above. Not 'most models agreed' — name the specific arguments.",
+    "text": "Single direct statement of what to do or believe. When the answer is naturally a list, use this as a one-line lead-in (e.g. \"Tonight's 12-game MLB slate (Tuesday, May 26, all ET):\") and put items in list_items.",
+    "list_items": ["Optional. Use ONLY when the answer is naturally a list — a slate of games, steps in a process, options to consider, items in a set. Each entry is one item. Omit this field entirely for prose answers."],
+    "why": "1–3 sentences grounded in the convergence and divergence analysis above. Not 'most models agreed' — name the specific arguments. Shorter is better when there's strong consensus.",
     "main_caveat": "The single most important thing that could make this recommendation wrong.",
     "confidence": "high" | "medium" | "low"
   }
@@ -110,12 +111,25 @@ Quality bar:
 - Be honest. If all three missed something obvious, say so in blind_spots.
 - Do not editorialize about which model is "better." Evaluate arguments.
 - If a voice is missing (only two responded), work with what you have and note it in blind_spots.
-- Recommendation must be one direct statement, not a list of options.
+- recommendation.text must be one direct statement or one short lead-in line — never a prose list of options. When the answer is naturally a list (slate, steps, items), put the items in recommendation.list_items and keep text as a one-line lead-in.
 
 Hard requirements for valid output:
 - "individual_positions" must contain ONE entry per voice that actually responded — no more, no less. If only Models A and B are present in the input, return exactly two entries. NEVER include a placeholder entry for a missing voice.
 - Every string field is required and must be a non-empty string. NEVER emit null, undefined, or empty string for core_claim, key_reasoning, claim, summary, text, why, or main_caveat. If you don't have something to say for a field, omit the parent object entirely instead of nulling its fields.
-- "blind_spots" may be empty if there are genuinely none — return [] in that case, not [null] or [""].`
+- "blind_spots" may be empty if there are genuinely none — return [] in that case, not [null] or [""].
+
+Concision rules — be much shorter when there's nothing meaningful to say:
+- If voices strongly agree on a clear factual answer, the synthesis should be SHORT. Tight individual_positions (one sentence each), one agreement_map entry, empty divergence_analysis, empty blind_spots if there are no real ones. The reader does not need scaffolding for the sake of scaffolding.
+- divergence_analysis: include ONLY material disagreements. Cosmetic differences ("Model B used prose vs. Models A and C used bullets", "wording varies slightly") do NOT count — omit them entirely. If voices agreed on substance, return [].
+- blind_spots: only GENUINE blind spots that materially affect the answer. Do not invent them to fill the section. If voices covered the question competently, return [].
+- individual_positions: when consensus is strong, keep core_claim to one sentence and key_reasoning to one phrase. Save detail for when models actually diverged.
+- "why" in the recommendation: when there's strong consensus and a clear factual answer, 1 sentence is enough — don't pad to 3.
+
+Output shape for list-style answers (slates, steps, options, sets):
+- Put the items in recommendation.list_items as an array of strings.
+- Keep recommendation.text as a single brief lead-in line (e.g. "Tonight's 12-game MLB slate (Tuesday, May 26, all ET):").
+- Do NOT cram the items into recommendation.text as a semicolon-separated run-on sentence. The list belongs in list_items.
+- For non-list answers (advice, decisions, single facts), omit list_items entirely.`
 
 const SYNTHESIZER_WEB_SEARCH_RULES = `Web search was ENABLED for this query and live <sources> are attached:
 - Use the sources to fact-check the voices. If a voice cited a source, verify the claim against the source's content.

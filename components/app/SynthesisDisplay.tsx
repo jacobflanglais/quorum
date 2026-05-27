@@ -57,6 +57,21 @@ function RecommendationSection({
             <p className="font-display text-xl leading-snug text-foreground">
               {rec.text}
             </p>
+            {rec.list_items && rec.list_items.length > 0 && (
+              <ol className="mt-4 flex list-none flex-col gap-1.5 text-sm leading-relaxed text-foreground">
+                {rec.list_items.map((item, i) => (
+                  <li key={i} className="flex gap-3">
+                    <span
+                      aria-hidden="true"
+                      className="mt-0.5 font-mono text-[10px] text-fg-ghost"
+                    >
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span className="flex-1">{item}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
             <p className="mt-4 text-sm leading-relaxed text-fg-muted">
               {rec.why}
             </p>

@@ -53,6 +53,12 @@ export const synthesisSchema = z.object({
   blind_spots: z.array(z.string()),
   recommendation: z.object({
     text: z.string().min(1),
+    /**
+     * When the answer is naturally a list (slate of games, steps,
+     * options), the synthesizer puts items here and keeps `text` as a
+     * one-line lead-in. Optional; omit for prose answers.
+     */
+    list_items: z.array(z.string().min(1)).optional(),
     why: z.string().min(1),
     main_caveat: z.string().min(1),
     confidence: synthesisConfidenceSchema,
