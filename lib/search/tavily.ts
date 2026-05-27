@@ -15,11 +15,19 @@
 
 const TAVILY_SEARCH = "https://api.tavily.com/search"
 const TAVILY_EXTRACT = "https://api.tavily.com/extract"
-const DEFAULT_MAX_RESULTS = 5
 const DEFAULT_SEARCH_TIMEOUT_MS = 20_000
 const DEFAULT_EXTRACT_TIMEOUT_MS = 45_000
 /** How many of the top search URLs to fully extract in deep mode. */
 const DEEP_EXTRACT_TOP_N = 4
+/**
+ * Time-sensitive keywords that justify a recency filter on basic search.
+ *
+ * Deliberately omits the bare word "now" — too many false positives in
+ * imperative phrasing like "fix this now" or "show me how to do X now".
+ * The compound forms ("right now", "just now") still match.
+ */
+const TIME_SENSITIVE_RE =
+  /\b(today|tonight|tomorrow|yesterday|currently|this (?:week|morning|afternoon|evening)|right now|just now|breaking|latest|just (?:announced|released)|live)\b/i
 
 export interface SearchResult {
   /** 1-indexed in the order they were returned. Stable for citations [1], [2], … */
@@ -36,22 +44,41 @@ export interface SearchResult {
 export interface SearchInput {
   query: string
   max_results?: number
-  /** "basic" (faster, cheaper) or "advanced" (deeper extraction). Default advanced. */
+  /** "basic" (faster, cheaper) or "advanced" (deeper extraction). Default basic. */
   depth?: "basic" | "advanced"
-  /** Date range floor for sources — useful for "today's news" style queries. */
-  days?: number
+  /** Include Tavily's pre-grounded one-paragraph answer. "advanced" is higher quality. */
+  include_answer?: false | "basic" | "advanced"
+  /** Pull each result's full page text. Slower; reserve for deep research. */
+  include_raw_content?: boolean
+  /**
+   * Recency window for sources. Tavily accepts "day" | "week" | "month" | "year".
+   * Useful for "today's news" style queries.
+   */
+  time_range?: "day" | "week" | "month" | "year"
+  /** Tavily search vertical. "news" biases toward recent, news-domain sources. */
+  topic?: "general" | "news"
 }
 
 export interface SearchResponse {
   query: string
   results: SearchResult[]
+  /** Tavily's own grounded summary, when include_answer was requested. */
+  answer: string | null
   cost_usd: number
   latency_ms: number
 }
 
+/** True when the query implies the user wants recent / live info. */
+export function isTimeSensitive(query: string): boolean {
+  return TIME_SENSITIVE_RE.test(query)
+}
+
 /**
- * Run a single Tavily search. Defaults to advanced depth + raw content
- * so voices get ~10x more usable text per source than basic snippets.
+ * Run a single Tavily search.
+ *
+ * Defaults are tuned for the Web Search toggle (fast, Google-like):
+ * basic depth, no raw_content, include a grounded answer, 8 results.
+ * Deep Research overrides depth + raw_content via the wrapper below.
  */
 export async function tavilySearch(input: SearchInput): Promise<SearchResponse> {
   const apiKey = process.env.TAVILY_API_KEY
@@ -60,8 +87,10 @@ export async function tavilySearch(input: SearchInput): Promise<SearchResponse> 
   }
 
   const start = Date.now()
-  const depth = input.depth ?? "advanced"
-  const max_results = input.max_results ?? DEFAULT_MAX_RESULTS
+  const depth = input.depth ?? "basic"
+  const include_raw_content = input.include_raw_content ?? false
+  const include_answer = input.include_answer ?? "advanced"
+  const max_results = input.max_results ?? (depth === "basic" ? 8 : 5)
 
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), DEFAULT_SEARCH_TIMEOUT_MS)
@@ -77,9 +106,10 @@ export async function tavilySearch(input: SearchInput): Promise<SearchResponse> 
         query: input.query,
         search_depth: depth,
         max_results,
-        include_answer: false,
-        include_raw_content: true, // ← ~10x more text per source
-        days: input.days,
+        include_answer,
+        include_raw_content,
+        time_range: input.time_range,
+        topic: input.topic,
       }),
       signal: controller.signal,
     })
@@ -91,6 +121,7 @@ export async function tavilySearch(input: SearchInput): Promise<SearchResponse> 
 
     const json = (await res.json()) as {
       query: string
+      answer?: string | null
       results?: Array<{
         title: string
         url: string
@@ -114,6 +145,7 @@ export async function tavilySearch(input: SearchInput): Promise<SearchResponse> 
     return {
       query: json.query ?? input.query,
       results,
+      answer: json.answer?.trim() ? json.answer.trim() : null,
       cost_usd: depth === "advanced" ? 0.01 : 0.005,
       latency_ms: Date.now() - start,
     }
@@ -181,16 +213,31 @@ export async function tavilyExtract(
 }
 
 /**
- * Convenience wrapper: search, then (if deep) extract top URLs and
- * merge the full content back into the results. Returns the same
- * SearchResult[] shape with `extracted: true` on enriched results.
+ * Convenience wrapper used by the orchestrator.
+ *
+ *  - Web Search (deep=false): basic depth, no raw_content, Tavily's
+ *    grounded answer requested, 8 results. Auto-applies the "news"
+ *    topic + 7-day recency filter when the query looks time-sensitive
+ *    (e.g. "tonight", "today", "latest").
+ *  - Deep Research (deep=true): advanced depth + raw_content for full
+ *    text, then a follow-up /extract pass on the top N URLs.
  */
 export async function tavilySearchAndMaybeExtract(input: {
   query: string
   deep: boolean
   topN?: number
 }): Promise<SearchResponse> {
-  const search = await tavilySearch({ query: input.query })
+  const timeSensitive = isTimeSensitive(input.query)
+
+  const search = await tavilySearch({
+    query: input.query,
+    depth: input.deep ? "advanced" : "basic",
+    include_raw_content: input.deep,
+    include_answer: "advanced",
+    max_results: input.deep ? 5 : 8,
+    topic: timeSensitive ? "news" : "general",
+    time_range: timeSensitive ? "week" : undefined,
+  })
 
   if (!input.deep || search.results.length === 0) {
     return search

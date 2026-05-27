@@ -45,10 +45,18 @@ export function CouncilWorkspace({ initialHistory }: CouncilWorkspaceProps) {
       const { question, searchEnabled, deepResearch } = input
       setPhase({ kind: "submitting", question })
       try {
+        // IANA timezone so the server can render "today" / "tonight"
+        // in the user's local frame instead of UTC.
+        const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
         const res = await fetch("/api/council", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ question, searchEnabled, deepResearch }),
+          body: JSON.stringify({
+            question,
+            searchEnabled,
+            deepResearch,
+            userTimeZone,
+          }),
         })
         if (!res.ok) {
           const errBody = (await res.json().catch(() => ({}))) as {

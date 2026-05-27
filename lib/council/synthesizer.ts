@@ -18,6 +18,9 @@ export interface SynthesizeArgs {
   context: SessionContextEntry[]
   anonymizedVoices: AnonymizedVoice[]
   sources?: SearchResult[]
+  groundedAnswer?: string | null
+  webSearchEnabled: boolean
+  userTimeZone?: string | null
 }
 
 /**
@@ -39,6 +42,9 @@ export async function synthesize(args: SynthesizeArgs): Promise<SynthesisResult>
     context: args.context,
     anonymizedVoices: args.anonymizedVoices,
     sources: args.sources,
+    groundedAnswer: args.groundedAnswer,
+    webSearchEnabled: args.webSearchEnabled,
+    userTimeZone: args.userTimeZone,
   })
 
   const response = await client.messages.create({

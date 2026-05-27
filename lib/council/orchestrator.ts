@@ -29,6 +29,8 @@ export interface RunCouncilArgs {
   searchEnabled?: boolean
   /** When true, also fetch full page content for top URLs after the initial search. Implies searchEnabled. */
   deepResearch?: boolean
+  /** IANA timezone from the browser (e.g. "America/New_York"). Used to render today's date in the user's local frame. Null → UTC. */
+  userTimeZone?: string | null
 }
 
 /**
@@ -53,6 +55,7 @@ export async function runCouncil({
   context = [],
   searchEnabled = false,
   deepResearch = false,
+  userTimeZone = null,
 }: RunCouncilArgs): Promise<CouncilResult> {
   const start = Date.now()
 
@@ -91,16 +94,19 @@ export async function runCouncil({
     //     fan-out. When deepResearch is also on, fetch full page content
     //     for top URLs (vs just snippets). Failures are non-fatal — we
     //     proceed without grounding rather than failing the whole query.
+    const webSearchEnabled = searchEnabled || deepResearch
     let searchResults: SearchResult[] = []
+    let searchAnswer: string | null = null
     let searchCost = 0
     let searchError: string | null = null
-    if (searchEnabled || deepResearch) {
+    if (webSearchEnabled) {
       try {
         const tavily = await tavilySearchAndMaybeExtract({
           query: question,
           deep: deepResearch,
         })
         searchResults = tavily.results
+        searchAnswer = tavily.answer
         searchCost = tavily.cost_usd
         await supabase
           .from("council_queries")
@@ -121,6 +127,9 @@ export async function runCouncil({
       question,
       context,
       sources: searchResults.length > 0 ? searchResults : undefined,
+      groundedAnswer: searchAnswer,
+      webSearchEnabled,
+      userTimeZone,
     })
 
     const voicePromises = PROVIDERS.map(async (provider) =>
@@ -227,6 +236,9 @@ export async function runCouncil({
         context,
         anonymizedVoices,
         sources: searchResults.length > 0 ? searchResults : undefined,
+        groundedAnswer: searchAnswer,
+        webSearchEnabled,
+        userTimeZone,
       })
 
       const { error: synthErr } = await supabase.from("syntheses").insert({

@@ -39,6 +39,16 @@ export async function POST(request: NextRequest) {
     isObject(body) && typeof body.deepResearch === "boolean"
       ? body.deepResearch
       : false
+  // IANA tz strings are plain alpha/digit/_/+/-/_/ chars (e.g. "America/New_York",
+  // "Etc/GMT+5"). Reject anything else so a tampered client can't inject prompt
+  // text via the date header — Intl would also reject most junk, but enforce at
+  // the boundary rather than relying on runtime implementation details.
+  const userTimeZone =
+    isObject(body) &&
+    typeof body.userTimeZone === "string" &&
+    /^[A-Za-z0-9_+\-/]{1,64}$/.test(body.userTimeZone)
+      ? body.userTimeZone
+      : null
 
   if (question.length === 0) {
     return NextResponse.json({ error: "Question is required" }, { status: 400 })
@@ -64,6 +74,7 @@ export async function POST(request: NextRequest) {
       context,
       searchEnabled,
       deepResearch,
+      userTimeZone,
     })
     return NextResponse.json(result)
   } catch (err) {
