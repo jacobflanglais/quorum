@@ -251,6 +251,7 @@ interface NewTaskInput {
   timezone: string
   tags: string[]
   search_enabled: boolean
+  deep_research_enabled: boolean
   notify_email: boolean
 }
 
@@ -276,6 +277,7 @@ function NewTaskForm({
   )
   const [tags, setTags] = useState<string[]>([])
   const [searchEnabled, setSearchEnabled] = useState(false)
+  const [deepResearch, setDeepResearch] = useState(false)
   const [notifyEmail, setNotifyEmail] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -298,6 +300,7 @@ function NewTaskForm({
         timezone,
         tags,
         search_enabled: searchEnabled,
+        deep_research_enabled: deepResearch && searchEnabled,
         notify_email: notifyEmail,
       })
     } catch (err) {
@@ -474,8 +477,36 @@ function NewTaskForm({
             </span>
             <span className="mt-0.5 block text-xs leading-relaxed text-fg-muted">
               Tavily fetches top sources for your prompt before the council
-              answers — useful for current-events questions. Adds ~$0.005 + a
+              answers — useful for current-events questions. Adds ~$0.01 + a
               few cents in extra tokens per run.
+            </span>
+          </span>
+        </label>
+
+        <label
+          className={
+            searchEnabled
+              ? "flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-3"
+              : "flex items-start gap-3 rounded-md border border-border bg-background p-3 opacity-50"
+          }
+        >
+          <input
+            type="checkbox"
+            checked={deepResearch && searchEnabled}
+            onChange={(e) => setDeepResearch(e.target.checked)}
+            disabled={saving || !searchEnabled}
+            className="mt-0.5 h-4 w-4 cursor-pointer accent-primary disabled:cursor-not-allowed"
+          />
+          <span className="flex-1">
+            <span className="block text-sm text-foreground">
+              Deep research mode
+            </span>
+            <span className="mt-0.5 block text-xs leading-relaxed text-fg-muted">
+              After the search, fully extract the top 4 pages and feed that
+              content to the council — instead of relying on snippets. Best for
+              questions where you need the actual article text (analyses,
+              schedules, deep research). Adds ~$0.02 more per run; requires web
+              search.
             </span>
           </span>
         </label>

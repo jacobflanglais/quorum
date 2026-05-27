@@ -340,6 +340,9 @@ function EditForm({
   const [timezone, setTimezone] = useState(task.timezone)
   const [tags, setTags] = useState<string[]>(task.tags ?? [])
   const [searchEnabled, setSearchEnabled] = useState(task.search_enabled ?? false)
+  const [deepResearch, setDeepResearch] = useState(
+    task.deep_research_enabled ?? false,
+  )
   const [notifyEmail, setNotifyEmail] = useState(task.notify_email)
 
   async function submit(e: React.FormEvent) {
@@ -352,6 +355,7 @@ function EditForm({
       timezone: timezone.trim(),
       tags,
       search_enabled: searchEnabled,
+      deep_research_enabled: deepResearch && searchEnabled,
       notify_email: notifyEmail,
     })
   }
@@ -441,6 +445,32 @@ function EditForm({
             <span className="mt-0.5 block text-xs leading-relaxed text-fg-muted">
               Fetches current sources via Tavily and grounds the council on
               them — best for current-events prompts.
+            </span>
+          </span>
+        </label>
+
+        <label
+          className={
+            searchEnabled
+              ? "flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-3"
+              : "flex items-start gap-3 rounded-md border border-border bg-background p-3 opacity-50"
+          }
+        >
+          <input
+            type="checkbox"
+            checked={deepResearch && searchEnabled}
+            onChange={(e) => setDeepResearch(e.target.checked)}
+            disabled={pending || !searchEnabled}
+            className="mt-0.5 h-4 w-4 cursor-pointer accent-primary disabled:cursor-not-allowed"
+          />
+          <span className="flex-1">
+            <span className="block text-sm text-foreground">
+              Deep research mode
+            </span>
+            <span className="mt-0.5 block text-xs leading-relaxed text-fg-muted">
+              Full-page extraction of top sources after search — voices reason
+              over actual article text instead of snippets. Adds ~$0.02 + extra
+              latency per run.
             </span>
           </span>
         </label>

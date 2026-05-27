@@ -37,14 +37,18 @@ export function CouncilWorkspace({ initialHistory }: CouncilWorkspaceProps) {
   }, [])
 
   const submitQuestion = useCallback(
-    async (input: { question: string; searchEnabled: boolean }) => {
-      const { question, searchEnabled } = input
+    async (input: {
+      question: string
+      searchEnabled: boolean
+      deepResearch: boolean
+    }) => {
+      const { question, searchEnabled, deepResearch } = input
       setPhase({ kind: "submitting", question })
       try {
         const res = await fetch("/api/council", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ question, searchEnabled }),
+          body: JSON.stringify({ question, searchEnabled, deepResearch }),
         })
         if (!res.ok) {
           const errBody = (await res.json().catch(() => ({}))) as {
@@ -160,6 +164,20 @@ function WorkspaceBody({ phase }: { phase: Phase }) {
       <p className="mb-12 font-display text-2xl leading-snug tracking-tight text-foreground">
         {result.question}
       </p>
+
+      {result.search_error && (
+        <div className="mb-8 rounded-lg border border-warning/30 bg-warning/5 p-4 text-sm text-foreground">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-warning">
+            Web search unavailable
+          </p>
+          <p className="mt-2 leading-relaxed text-fg-muted">
+            Search was requested but couldn&rsquo;t complete:{" "}
+            <code className="font-mono text-xs">{result.search_error}</code>. The
+            council answered using model knowledge only — answers may be
+            outdated or ungrounded.
+          </p>
+        </div>
+      )}
 
       {result.synthesis ? (
         <SynthesisDisplay synthesis={result.synthesis.json} />
@@ -284,6 +302,7 @@ function toCurrentResult(json: CouncilResult): CurrentResult {
         }
       : null,
     search_results: json.search_results ?? null,
+    search_error: json.search_error ?? null,
     total_cost_usd: json.total_cost_usd,
     total_latency_ms: json.total_latency_ms,
   }
@@ -316,6 +335,7 @@ function historyToCurrentResult(json: HistoryDetailResponse): CurrentResult {
     voices: json.voices,
     synthesis: json.synthesis,
     search_results: json.query.search_results ?? null,
+    search_error: null,
     total_cost_usd,
     total_latency_ms: json.synthesis?.latency_ms ?? 0,
   }

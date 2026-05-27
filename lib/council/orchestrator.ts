@@ -6,7 +6,10 @@ import { VOICE_CALLERS } from "./voices"
 import { anonymize } from "./anonymizer"
 import { synthesize } from "./synthesizer"
 import { PROVIDERS } from "./types"
-import { tavilySearch, type SearchResult } from "@/lib/search/tavily"
+import {
+  tavilySearchAndMaybeExtract,
+  type SearchResult,
+} from "@/lib/search/tavily"
 import type {
   AnonymizedVoice,
   CouncilResult,
@@ -24,6 +27,8 @@ export interface RunCouncilArgs {
   context?: SessionContextEntry[]
   /** If true, run a Tavily search and pass results to voices + synthesizer. */
   searchEnabled?: boolean
+  /** When true, also fetch full page content for top URLs after the initial search. Implies searchEnabled. */
+  deepResearch?: boolean
 }
 
 /**
@@ -47,6 +52,7 @@ export async function runCouncil({
   question,
   context = [],
   searchEnabled = false,
+  deepResearch = false,
 }: RunCouncilArgs): Promise<CouncilResult> {
   const start = Date.now()
 
@@ -81,14 +87,19 @@ export async function runCouncil({
       PROVIDERS.map((p) => [p, findProviderModel(registry, p).model]),
     ) as Record<Provider, string>
 
-    // 2b. (Phase 6) if search enabled, fetch web sources before fan-out.
-    //     Failures are non-fatal — we proceed without grounding rather
-    //     than failing the whole query.
+    // 2b. (Phase 6 + 6.5) if search enabled, fetch web sources before
+    //     fan-out. When deepResearch is also on, fetch full page content
+    //     for top URLs (vs just snippets). Failures are non-fatal — we
+    //     proceed without grounding rather than failing the whole query.
     let searchResults: SearchResult[] = []
     let searchCost = 0
-    if (searchEnabled) {
+    let searchError: string | null = null
+    if (searchEnabled || deepResearch) {
       try {
-        const tavily = await tavilySearch({ query: question })
+        const tavily = await tavilySearchAndMaybeExtract({
+          query: question,
+          deep: deepResearch,
+        })
         searchResults = tavily.results
         searchCost = tavily.cost_usd
         await supabase
@@ -96,9 +107,11 @@ export async function runCouncil({
           .update({ search_results: tavily.results as unknown })
           .eq("id", query_id)
       } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        searchError = msg
         console.error(
           "[council] tavily search failed (continuing without grounding):",
-          err instanceof Error ? err.message : err,
+          msg,
         )
       }
     }
@@ -259,6 +272,7 @@ export async function runCouncil({
       label_mapping: labelMapping,
       synthesis,
       search_results: searchResults.length > 0 ? searchResults : null,
+      search_error: searchError,
       total_cost_usd,
       total_latency_ms,
     }

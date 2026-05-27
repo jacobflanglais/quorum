@@ -9,6 +9,7 @@ export interface ScheduledTask {
   tags: string[]
   enabled: boolean
   search_enabled: boolean
+  deep_research_enabled: boolean
   notify_email: boolean
   notify_push: boolean
   next_run_at: string | null

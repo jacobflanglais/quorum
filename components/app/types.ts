@@ -44,6 +44,7 @@ export interface CurrentResult {
   voices: ClientVoice[]
   synthesis: ClientSynthesis | null
   search_results: import("@/lib/search/tavily").SearchResult[] | null
+  search_error: string | null
   total_cost_usd: number
   total_latency_ms: number
 }

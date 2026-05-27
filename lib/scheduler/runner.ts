@@ -44,6 +44,7 @@ export async function runScheduledTask(
       question: task.prompt,
       context: [], // scheduled tasks intentionally have no session context
       searchEnabled: task.search_enabled ?? false,
+      deepResearch: task.deep_research_enabled ?? false,
     })
 
     // 3a. mark the run row completed

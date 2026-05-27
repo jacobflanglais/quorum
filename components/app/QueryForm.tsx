@@ -1,25 +1,34 @@
 "use client"
 
 import { useEffect, useState, type FormEvent, type KeyboardEvent } from "react"
-import { ArrowRight, Globe, Loader2 } from "lucide-react"
+import { ArrowRight, Globe, Loader2, Telescope } from "lucide-react"
 
 interface QueryFormProps {
   pending: boolean
-  onSubmit: (input: { question: string; searchEnabled: boolean }) => void
+  onSubmit: (input: {
+    question: string
+    searchEnabled: boolean
+    deepResearch: boolean
+  }) => void
 }
 
 const SEARCH_STORAGE_KEY = "quorum:search-enabled"
+const DEEP_STORAGE_KEY = "quorum:deep-research-enabled"
 
 export function QueryForm({ pending, onSubmit }: QueryFormProps) {
   const [value, setValue] = useState("")
   const [searchEnabled, setSearchEnabled] = useState(false)
+  const [deepResearch, setDeepResearch] = useState(false)
 
-  // Hydrate the toggle from localStorage on mount (sticky across reloads).
   useEffect(() => {
     if (typeof window === "undefined") return
     try {
-      const stored = window.localStorage.getItem(SEARCH_STORAGE_KEY)
-      if (stored === "true") setSearchEnabled(true)
+      if (window.localStorage.getItem(SEARCH_STORAGE_KEY) === "true") {
+        setSearchEnabled(true)
+      }
+      if (window.localStorage.getItem(DEEP_STORAGE_KEY) === "true") {
+        setDeepResearch(true)
+      }
     } catch {
       // ignore
     }
@@ -32,13 +41,26 @@ export function QueryForm({ pending, onSubmit }: QueryFormProps) {
     } catch {
       // ignore
     }
+    // If search goes off, deep research can't be on
+    if (!next && deepResearch) persistDeep(false)
+  }
+
+  function persistDeep(next: boolean) {
+    setDeepResearch(next)
+    try {
+      window.localStorage.setItem(DEEP_STORAGE_KEY, next ? "true" : "false")
+    } catch {
+      // ignore
+    }
+    // Deep implies search
+    if (next && !searchEnabled) persistSearch(true)
   }
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
     const trimmed = value.trim()
     if (trimmed.length === 0 || pending) return
-    onSubmit({ question: trimmed, searchEnabled })
+    onSubmit({ question: trimmed, searchEnabled, deepResearch })
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
@@ -46,7 +68,7 @@ export function QueryForm({ pending, onSubmit }: QueryFormProps) {
       e.preventDefault()
       const trimmed = value.trim()
       if (trimmed.length === 0 || pending) return
-      onSubmit({ question: trimmed, searchEnabled })
+      onSubmit({ question: trimmed, searchEnabled, deepResearch })
     }
   }
 
@@ -62,25 +84,26 @@ export function QueryForm({ pending, onSubmit }: QueryFormProps) {
           disabled={pending}
           className="w-full resize-none border-0 bg-transparent px-4 py-3 text-base text-foreground placeholder:text-fg-ghost focus:outline-none disabled:opacity-60"
         />
-        <div className="flex items-center justify-between gap-3 border-t border-border bg-surface px-4 py-2">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              role="switch"
-              aria-checked={searchEnabled}
-              aria-label="Toggle web search"
-              onClick={() => persistSearch(!searchEnabled)}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-surface px-4 py-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <ModePill
+              active={searchEnabled}
               disabled={pending}
-              className={
-                searchEnabled
-                  ? "inline-flex items-center gap-1.5 rounded-md border border-accent-muted/50 bg-accent-subtle px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest text-primary transition-colors"
-                  : "inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest text-fg-muted transition-colors hover:text-foreground"
-              }
-            >
-              <Globe className="h-3 w-3" />
-              {searchEnabled ? "Web search on" : "Web search off"}
-            </button>
-            <span className="hidden font-mono text-[10px] uppercase tracking-widest text-fg-ghost sm:inline">
+              icon={<Globe className="h-3 w-3" />}
+              onLabel="Web search on"
+              offLabel="Web search off"
+              onClick={() => persistSearch(!searchEnabled)}
+            />
+            <ModePill
+              active={deepResearch}
+              disabled={pending || !searchEnabled}
+              icon={<Telescope className="h-3 w-3" />}
+              onLabel="Deep research on"
+              offLabel="Deep research off"
+              onClick={() => persistDeep(!deepResearch)}
+              hint={!searchEnabled ? "Requires web search" : undefined}
+            />
+            <span className="hidden font-mono text-[10px] uppercase tracking-widest text-fg-ghost md:inline">
               ⌘ Enter to convene
             </span>
           </div>
@@ -104,5 +127,42 @@ export function QueryForm({ pending, onSubmit }: QueryFormProps) {
         </div>
       </div>
     </form>
+  )
+}
+
+function ModePill({
+  active,
+  disabled,
+  icon,
+  onLabel,
+  offLabel,
+  onClick,
+  hint,
+}: {
+  active: boolean
+  disabled?: boolean
+  icon: React.ReactNode
+  onLabel: string
+  offLabel: string
+  onClick: () => void
+  hint?: string
+}) {
+  const className = active
+    ? "inline-flex items-center gap-1.5 rounded-md border border-accent-muted/50 bg-accent-subtle px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest text-primary transition-colors disabled:opacity-50"
+    : "inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest text-fg-muted transition-colors hover:text-foreground disabled:opacity-50 disabled:hover:text-fg-muted disabled:cursor-not-allowed"
+
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={active}
+      onClick={onClick}
+      disabled={disabled}
+      title={hint}
+      className={className}
+    >
+      {icon}
+      {active ? onLabel : offLabel}
+    </button>
   )
 }

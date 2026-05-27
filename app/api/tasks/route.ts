@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
     : []
   const enabled = body.enabled !== false
   const search_enabled = body.search_enabled === true
+  const deep_research_enabled = body.deep_research_enabled === true
   const notify_email = body.notify_email !== false
   const notify_push = body.notify_push !== false
 
@@ -92,6 +93,7 @@ export async function POST(request: NextRequest) {
       tags,
       enabled,
       search_enabled,
+      deep_research_enabled,
       notify_email,
       notify_push,
       next_run_at,

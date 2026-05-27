@@ -114,6 +114,8 @@ export async function PATCH(request: NextRequest, ctx: RouteContext) {
   }
   if (typeof body.enabled === "boolean") updates.enabled = body.enabled
   if (typeof body.search_enabled === "boolean") updates.search_enabled = body.search_enabled
+  if (typeof body.deep_research_enabled === "boolean")
+    updates.deep_research_enabled = body.deep_research_enabled
   if (typeof body.notify_email === "boolean") updates.notify_email = body.notify_email
   if (typeof body.notify_push === "boolean") updates.notify_push = body.notify_push
 
