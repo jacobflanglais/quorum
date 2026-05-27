@@ -64,7 +64,7 @@ export function QueryForm({ pending, onSubmit }: QueryFormProps) {
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault()
       const trimmed = value.trim()
       if (trimmed.length === 0 || pending) return
@@ -104,7 +104,7 @@ export function QueryForm({ pending, onSubmit }: QueryFormProps) {
               hint={!searchEnabled ? "Requires web search" : undefined}
             />
             <span className="hidden font-mono text-[10px] uppercase tracking-widest text-fg-ghost md:inline">
-              ⌘ Enter to convene
+              Enter to convene · Shift+Enter for newline
             </span>
           </div>
           <button
