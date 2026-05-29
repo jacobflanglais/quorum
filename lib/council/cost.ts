@@ -4,7 +4,7 @@ import type { Provider } from "./types"
  * Per-million-token pricing in USD by provider/model family.
  *
  * Update these when providers change pricing. The cost calculator
- * matches by model-name substring so "claude-opus-4-7" routes to
+ * matches by model-name substring so "claude-opus-4-8" routes to
  * the "opus" tier, "gpt-5.5" to the "gpt-5" tier, etc.
  *
  * These are rough but in the right order of magnitude. Verify

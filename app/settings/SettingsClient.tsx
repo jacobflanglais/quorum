@@ -418,7 +418,7 @@ function SynthesizerSection({
           note="Default · structured · ~5× cheaper than Opus"
         />
         <SuggestionPill
-          model="claude-opus-4-7"
+          model="claude-opus-4-8"
           note="Strongest reasoning · expensive · self-bias risk"
         />
         <SuggestionPill
